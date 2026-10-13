@@ -60,18 +60,21 @@ body {
 .logo-area {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     font-family: 'Orbitron', sans-serif;
     font-weight: 900;
     font-size: 14px;
     letter-spacing: 1px;
 }
 
-.logo-icon {
-    width: 26px;
-    height: 26px;
-    background: linear-gradient(135deg, #00ffd5, #0077ff);
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+/* Header Small Logo Image */
+.header-logo-img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #00ffd5;
+    box-shadow: 0 0 10px rgba(0, 255, 213, 0.5);
 }
 
 .free-access-tag {
@@ -126,7 +129,7 @@ body {
 .portal-graphic {
     position: relative;
     width: 100%;
-    height: 170px;
+    height: 180px;
     margin: 10px 0;
     display: flex;
     justify-content: center;
@@ -136,16 +139,18 @@ body {
     border: 1px solid rgba(0, 255, 213, 0.15);
 }
 
-.core-cube {
-    width: 90px;
-    height: 90px;
-    background: linear-gradient(135deg, #00ffd5, #ffaa00);
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-    box-shadow: 0 0 30px rgba(0, 255, 213, 0.4), inset 0 0 15px rgba(255, 170, 0, 0.6);
-    animation: pulseCube 3s ease-in-out infinite;
+/* Main Center Logo Image Styling */
+.portal-logo-img {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #00ffd5;
+    box-shadow: 0 0 25px rgba(0, 255, 213, 0.5), 0 0 50px rgba(112, 0, 255, 0.3);
+    animation: pulseLogo 3s ease-in-out infinite;
 }
 
-@keyframes pulseCube {
+@keyframes pulseLogo {
     0%, 100% { transform: scale(1); filter: brightness(1); }
     50% { transform: scale(1.05); filter: brightness(1.2); }
 }
@@ -348,6 +353,45 @@ body {
     text-transform: uppercase;
     letter-spacing: 1px;
 }
+
+/* BLOCKING OVERLAY MODAL */
+.lock-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 8, 11, 0.95);
+    backdrop-filter: blur(16px);
+    z-index: 999;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.lock-card {
+    background: rgba(15, 23, 42, 0.95);
+    border: 2px solid rgba(255, 68, 68, 0.6);
+    padding: 30px 24px;
+    border-radius: 24px;
+    box-shadow: 0 0 50px rgba(255, 68, 68, 0.3);
+    width: 100%;
+    max-width: 340px;
+    text-align: center;
+}
+
+.lock-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    color: #ff4444;
+    font-weight: 900;
+    margin-bottom: 12px;
+}
+
+.lock-desc {
+    font-size: 14px;
+    color: #cbd5e1;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
 </style>
 </head>
 <body>
@@ -356,7 +400,8 @@ body {
     <!-- Top Navigation -->
     <div class="top-nav">
         <div class="logo-area">
-            <div class="logo-icon"></div>
+            <!-- Header Small Logo -->
+            <img src="logo.jpg" alt="Logo" class="header-logo-img">
             <span>FLUXHAX // NEXUS</span>
         </div>
         <div class="free-access-tag">FREE ACCESS</div>
@@ -369,9 +414,9 @@ body {
         <div class="side-info">Play Smarter • Stay Connected • Be Part of the Community</div>
     </div>
 
-    <!-- Portal Graphic -->
+    <!-- Portal Graphic with Main Logo Image -->
     <div class="portal-graphic">
-        <div class="core-cube"></div>
+        <img src="logo.jpg" alt="FLUXHAX Logo" class="portal-logo-img">
     </div>
 
     <!-- Access Gate Status -->
@@ -392,7 +437,7 @@ body {
     <!-- Action Buttons -->
     <div class="action-group">
         <!-- Direktang nakaturo sa iyong GPLinks link -->
-        <a href="https://gplinks.co/rNs6oNk" class="btn-main">
+        <a href="https://gplinks.co/rNs6oNk" class="btn-main" id="getKeyBtn">
             <span>🔑 GENERATE FREE KEY</span>
             <span>➔</span>
         </a>
@@ -430,6 +475,48 @@ body {
         <a href="https://t.me/FLUXHAX" class="vip-btn" target="_blank">👑 VIP ACCESS</a>
     </div>
 </div>
+
+<!-- BLOCKING OVERLAY MODAL FOR COOLDOWN -->
+<div class="lock-overlay" id="lockOverlay">
+    <div class="lock-card">
+        <div class="lock-title">COOLDOWN ACTIVE</div>
+        <div class="lock-desc" id="lockDesc">You already generated a key. Please wait before getting another key.</div>
+    </div>
+</div>
+
+<script>
+function getDeviceID() {
+    let deviceId = localStorage.getItem("kaze_device_id");
+    if (!deviceId) {
+        deviceId = 'dev_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+        localStorage.setItem("kaze_device_id", deviceId);
+    }
+    return deviceId;
+}
+
+async function checkSystemStatus() {
+    let deviceId = getDeviceID();
+    const lockOverlay = document.getElementById('lockOverlay');
+    const lockDesc = document.getElementById('lockDesc');
+    const getKeyBtn = document.getElementById('getKeyBtn');
+
+    try {
+        let res = await fetch(`https://server-oty8.onrender.com/token?device_id=${deviceId}`, { cache: "no-store" });
+        let data = await res.json();
+        
+        if (data.status === "cooldown") {
+            lockDesc.innerText = data.message;
+            lockOverlay.style.display = "flex";
+            getKeyBtn.style.pointerEvents = "none";
+            getKeyBtn.style.opacity = "0.5";
+        }
+    } catch (e) {
+        console.log("Server check error", e);
+    }
+}
+
+window.onload = checkSystemStatus;
+</script>
 
 </body>
 </html>
